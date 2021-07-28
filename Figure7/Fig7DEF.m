@@ -4,17 +4,17 @@
 % place on your machine.
 % 7/19/2021 MGC
 
-%restoredefaultpath;
+restoredefaultpath;
 
 % add helper functions to path
-%addpath(genpath('..\matlab_helpers\malcolm'));
+addpath(genpath('..\matlab_helpers\malcolm'));
 
 % get paths
 paths = get_paths; % *** NOTE: modify the paths in this function as appropriate ***
 paths.sessions = fullfile(paths.intermediate_data,'session_lists');
 
 % load cell_info table
-load(fullfile(paths.intermediate_data,fullfile('cell_info','cell_info_Apr2020'))); 
+load(fullfile(paths.intermediate_data,'cell_info\cell_info_Apr2020')); 
 
 % analysis options
 opt = load_default_opt;
@@ -50,10 +50,10 @@ end
 % PCA
 [coeff,score,~,~,expl] = pca(corrmat_allreps(:,tf));
 
-%% Figure 7D: Avg corrmat for each brain region
+%% Figure 7D top: Avg corrmat for each brain region
 
 hfig = figure('Position',[300 300 1000 400]);
-hfig.Name = 'Figure 7D: avg corrmats by brain region (MEC, RSC, V1)';
+hfig.Name = 'Figure 7D top: avg corrmats by brain region (MEC, RSC, V1)';
 for br = 1:numel(opt.brain_regions)
     corrmat_this = rez_all{br}.corrmat_avg_stab;
     
@@ -84,6 +84,38 @@ for br = 1:numel(opt.brain_regions)
     ylim([-1 num_tr+0.5]);
     axis square;
     axis off
+end
+
+%% Figure 7D bottom: Avg corrmat for each brain region
+
+hfig = figure('Position',[300 300 1000 150]);
+hfig.Name = 'Figure 7D bottom: avg corr to baseline by brain region (MEC, RSC, V1)';
+plot_col = cbrewer('qual','Set2',3,'pchip');
+for br = 1:numel(opt.brain_regions)
+    corrmat_gc = rez_all{br}.corrmat_avg_stab;
+    corrmat_bl = rez_all{br}.corrmat_avg_stab_bl;
+    
+    trialcorr_gc = squeeze(nanmean(corrmat_gc(:,1:6,:),2));
+    trialcorr_bl = squeeze(nanmean(corrmat_bl(:,1:6,:),2));
+    
+    avg_gc = mean(trialcorr_gc);
+    avg_bl = mean(trialcorr_bl);
+    
+    sem_gc = std(trialcorr_gc)/sqrt(size(trialcorr_gc,1));
+    sem_bl = std(trialcorr_bl)/sqrt(size(trialcorr_bl,1));
+    
+    % plot
+    subplot(1,numel(opt.brain_regions),br); hold on;
+    errorbar(1:16,avg_gc,sem_gc,'Color',plot_col(br,:));
+    errorbar(1:16,avg_bl,sem_bl,'k');
+    ylim([0.4 0.75]);
+    xticks([1 16]);
+    yticks([0.4 0.5 0.6 0.7]);
+    title(opt.brain_regions{br});
+    plot([6.5 6.5],ylim,'k--');
+    plot([10.5 10.5],ylim,'k--');  
+    ylabel('Similarity to baseline map');
+    xlabel('Trial')
 end
 
 %% Figure 7E: Indiv corrmat plot
